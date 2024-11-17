@@ -24,6 +24,7 @@ import javax.crypto.SecretKey;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.regex.Pattern;
 
 @Service
 public class AccountService {
@@ -86,6 +87,19 @@ public class AccountService {
         return ResponseEntity.badRequest().body("Wrong username or password!");
     }
 
+    private boolean isValid(String email)
+    {
+        String emailRegex = "^[a-zA-Z0-9_+&*-]+(?:\\."+
+                "[a-zA-Z0-9_+&*-]+)*@" +
+                "(?:[a-zA-Z0-9-]+\\.)+[a-z" +
+                "A-Z]{2,7}$";
+
+        Pattern pat = Pattern.compile(emailRegex);
+        if (email == null)
+            return false;
+        return pat.matcher(email).matches();
+    }
+
     public ResponseEntity<Object> register(UserDto userDto, BindingResult result){
 
         if(result.hasErrors()){
@@ -95,6 +109,18 @@ public class AccountService {
                 var error = (FieldError) errorList.get(i);
                 errorMap.put(error.getField(), error.getDefaultMessage());
             }
+            return ResponseEntity.badRequest().body(errorMap);
+        }
+
+        if(userDto.getUsername().contains(" ") || userDto.getPassword().contains(" ")){
+            var errorMap = new HashMap<String, String>();
+            errorMap.put("Error","Username/Password is not valid!");
+            return ResponseEntity.badRequest().body(errorMap);
+        }
+
+        if(!isValid(userDto.getEmail())){
+            var errorMap = new HashMap<String, String>();
+            errorMap.put("Error","Email is not valid!");
             return ResponseEntity.badRequest().body(errorMap);
         }
 
